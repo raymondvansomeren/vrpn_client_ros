@@ -1,66 +1,51 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(vrpn_client_ros)
 
-find_package(catkin REQUIRED COMPONENTS geometry_msgs roscpp tf2_ros)
+find_package(ament_cmake REQUIRED)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/vrpn/cmake")
 find_package(VRPN REQUIRED)
 
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES vrpn_client_ros
-  CATKIN_DEPENDS geometry_msgs tf2_ros
-  DEPENDS VRPN
-)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+# find_package(tf2 REQUIRED)
 
-set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++11;-Wall")
+set(CMAKE_CXX_STANDARD 17)
+add_compile_options(-Wall -Wextra -Wpedantic)
 
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-  SYSTEM ${VRPN_INCLUDE_DIR}
-)
+include_directories(include)
 
 add_library(vrpn_client_ros
-  src/vrpn_client_ros.cpp
+            src/vrpn_client_ros.cpp
 )
-target_link_libraries(vrpn_client_ros
-  ${catkin_LIBRARIES}
-  ${VRPN_LIBRARIES}
+ament_target_dependencies(vrpn_client_ros rclcpp std_msgs geometry_msgs tf2_ros VRPN)
+
+add_executable(vrpn_tracker_node src/vrpn_tracker_node.cpp)
+target_link_libraries(vrpn_tracker_node vrpn_client_ros)
+ament_target_dependencies(vrpn_tracker_node rclcpp std_msgs geometry_msgs tf2 VRPN)
+
+add_executable(vrpn_client_node src/vrpn_client_node.cpp)
+target_link_libraries(vrpn_client_node vrpn_client_ros)
+ament_target_dependencies(vrpn_client_node rclcpp std_msgs geometry_msgs tf2_ros VRPN)
+
+install(DIRECTORY
+    launch
+    DESTINATION share/${PROJECT_NAME}/
 )
 
-add_executable(vrpn_tracker_node
-  src/vrpn_tracker_node.cpp)
-add_dependencies(vrpn_tracker_node vrpn_client_ros)
-target_link_libraries(vrpn_tracker_node
-  vrpn_client_ros
-  ${catkin_LIBRARIES}
+install(TARGETS
+    vrpn_client_ros
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
 )
 
-add_executable(vrpn_client_node
-  src/vrpn_client_node.cpp)
-add_dependencies(vrpn_client_node vrpn_client_ros)
-target_link_libraries(vrpn_client_node
-  vrpn_client_ros
-  ${catkin_LIBRARIES}
+install(TARGETS
+    vrpn_tracker_node
+    vrpn_client_node
+    DESTINATION lib/${PROJECT_NAME}
 )
 
-install(TARGETS vrpn_client_ros vrpn_tracker_node vrpn_client_node
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-)
-
-install(DIRECTORY launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-
-if(CATKIN_ENABLE_TESTING)
-  find_package(roslaunch REQUIRED)
-  find_package(roslint REQUIRED)
-  roslint_cpp()
-  roslint_add_test()
-  roslaunch_add_file_check(launch)
-endif()
+ament_package()
