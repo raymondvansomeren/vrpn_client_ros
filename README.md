@@ -34,4 +34,4 @@ In a terminal at `vrpn_client_ros/`
 2. Follow the directions at https://github.com/vrpn/vrpn/wiki/Getting-Started#compiling -->
 
 ## Known bugs
-* The client crashes
+* The client crashes when a new rigid body gets created in motive
